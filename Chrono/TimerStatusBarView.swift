@@ -17,6 +17,7 @@ class TimerStatusBarView: NSView {
     
     private let fixedWidth: CGFloat = 72 // Fixed width to prevent jittering (minimal padding for "2:01:25.6")
     private let padding: CGFloat = 8
+    private let visualEffectView = NSVisualEffectView(frame: .zero)
     
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -30,10 +31,32 @@ class TimerStatusBarView: NSView {
     
     private func setupView() {
         wantsLayer = true
-        layer?.masksToBounds = false
+        layer?.masksToBounds = true
+        
+        visualEffectView.translatesAutoresizingMaskIntoConstraints = false
+        visualEffectView.state = .active
+        visualEffectView.blendingMode = .behindWindow
+        if #available(macOS 15.0, *) {
+            // Newer macOS: more liquid glass-like material
+            visualEffectView.material = .hudWindow
+        } else {
+            // Older macOS: standard blurred menu material
+            visualEffectView.material = .menu
+        }
+        addSubview(visualEffectView, positioned: .below, relativeTo: nil)
+        NSLayoutConstraint.activate([
+            visualEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            visualEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            visualEffectView.topAnchor.constraint(equalTo: topAnchor),
+            visualEffectView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        layer?.cornerRadius = bounds.height / 2
         // Make view non-interactive so clicks pass through to button
         isHidden = false
     }
+    
+    override var isOpaque: Bool { false }
     
     func updateTime(_ time: String) {
         timeString = time
@@ -43,24 +66,21 @@ class TimerStatusBarView: NSView {
         return NSSize(width: fixedWidth, height: 20)
     }
     
+    override func layout() {
+        super.layout()
+        layer?.cornerRadius = bounds.height / 2
+    }
+    
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         
-        // Draw rounded rectangle background with #767680 at 60% opacity
-        // Fully rounded edges - corner radius is half the height
-        let backgroundRect = NSRect(
-            x: 0,
-            y: 0,
-            width: bounds.width,
-            height: bounds.height
-        )
-        
-        // Frame color: #767680 with 60% opacity
+        // Background pill: #767680 at 60% opacity
+        let backgroundRect = NSRect(x: 0, y: 0, width: bounds.width, height: bounds.height)
+        let radius = bounds.height / 2
         let backgroundColor = NSColor(red: 0x76/255.0, green: 0x76/255.0, blue: 0x80/255.0, alpha: 0.60)
-        let radius = bounds.height / 2 // Fully rounded = half height
-        let path = NSBezierPath(roundedRect: backgroundRect, xRadius: radius, yRadius: radius)
+        let backgroundPath = NSBezierPath(roundedRect: backgroundRect, xRadius: radius, yRadius: radius)
         backgroundColor.setFill()
-        path.fill()
+        backgroundPath.fill()
         
         // Draw the time text with SF Pro font using tabular numbers (monospaced digits)
         // Tabular numbers ensure each digit takes the same width to prevent shifting

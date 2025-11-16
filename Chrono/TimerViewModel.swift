@@ -23,11 +23,14 @@ class TimerViewModel: ObservableObject {
         isRunning = true
         startTime = Date()
         
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
-                self?.updateElapsed()
+                self.updateElapsed()
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
     
     func stop() {
@@ -65,13 +68,20 @@ class TimerViewModel: ObservableObject {
     }
     
     func formattedTimeForPopover() -> String {
-        // Format for popover: MM.SS.t (e.g., "01.15.7")
+        // Format for popover:
+        // - If hours > 0: H:MM:SS.t
+        // - Else: MM:SS.t
         let totalSeconds = Int(elapsed)
-        let minutes = totalSeconds / 60
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
         let tenths = Int((elapsed.truncatingRemainder(dividingBy: 1)) * 10)
         
-        return String(format: "%02d.%02d.%d", minutes, seconds, tenths)
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+        } else {
+            return String(format: "%02d:%02d.%d", minutes, seconds, tenths)
+        }
     }
     
     private func updateElapsed() {

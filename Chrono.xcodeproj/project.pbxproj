@@ -3,20 +3,39 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
+
+/* Begin PBXBuildFile section */
+		A1F001202F00000100000001 /* ChronoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001102F00000100000001 /* ChronoApp.swift */; };
+		A1F001212F00000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001112F00000100000001 /* ContentView.swift */; };
+		A1F001222F00000100000001 /* ActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001122F00000100000001 /* ActivityMonitor.swift */; };
+		A1F001232F00000100000001 /* KeyboardShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001132F00000100000001 /* KeyboardShortcutManager.swift */; };
+		A1F001242F00000100000001 /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001142F00000100000001 /* LiveActivityView.swift */; };
+		A1F001252F00000100000001 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001152F00000100000001 /* MenuBarManager.swift */; };
+		A1F001262F00000100000001 /* TimerPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001162F00000100000001 /* TimerPopoverView.swift */; };
+		A1F001272F00000100000001 /* TimerStatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001172F00000100000001 /* TimerStatusBarView.swift */; };
+		A1F001282F00000100000001 /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001182F00000100000001 /* TimerViewModel.swift */; };
+		A1F0012A2F00000100000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0011A2F00000100000001 /* OnboardingView.swift */; };
+		A1F001292F00000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1F001192F00000100000001 /* Assets.xcassets */; };
+		A1F0012C2F00000100000001 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = A1F0012B2F00000100000001 /* assets */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		2C85CABE2EC8A8330028865E /* Chrono.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chrono.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1F001102F00000100000001 /* ChronoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChronoApp.swift; sourceTree = "<group>"; };
+		A1F001112F00000100000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1F001122F00000100000001 /* ActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityMonitor.swift; sourceTree = "<group>"; };
+		A1F001132F00000100000001 /* KeyboardShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutManager.swift; sourceTree = "<group>"; };
+		A1F001142F00000100000001 /* LiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityView.swift; sourceTree = "<group>"; };
+		A1F001152F00000100000001 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
+		A1F001162F00000100000001 /* TimerPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPopoverView.swift; sourceTree = "<group>"; };
+		A1F001172F00000100000001 /* TimerStatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerStatusBarView.swift; sourceTree = "<group>"; };
+		A1F001182F00000100000001 /* TimerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModel.swift; sourceTree = "<group>"; };
+		A1F0011A2F00000100000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A1F001192F00000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1F0012B2F00000100000001 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		2C85CAC02EC8A8330028865E /* Chrono */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Chrono;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		2C85CABB2EC8A8330028865E /* Frameworks */ = {
@@ -32,7 +51,7 @@
 		2C85CAB52EC8A8330028865E = {
 			isa = PBXGroup;
 			children = (
-				2C85CAC02EC8A8330028865E /* Chrono */,
+				A1F0010F2F00000100000001 /* Chrono */,
 				2C85CABF2EC8A8330028865E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +62,25 @@
 				2C85CABE2EC8A8330028865E /* Chrono.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A1F0010F2F00000100000001 /* Chrono */ = {
+			isa = PBXGroup;
+			children = (
+				A1F001102F00000100000001 /* ChronoApp.swift */,
+				A1F001112F00000100000001 /* ContentView.swift */,
+				A1F001122F00000100000001 /* ActivityMonitor.swift */,
+				A1F001132F00000100000001 /* KeyboardShortcutManager.swift */,
+				A1F001142F00000100000001 /* LiveActivityView.swift */,
+				A1F001152F00000100000001 /* MenuBarManager.swift */,
+				A1F001162F00000100000001 /* TimerPopoverView.swift */,
+				A1F001172F00000100000001 /* TimerStatusBarView.swift */,
+				A1F001182F00000100000001 /* TimerViewModel.swift */,
+				A1F0011A2F00000100000001 /* OnboardingView.swift */,
+				A1F001192F00000100000001 /* Assets.xcassets */,
+				A1F0012B2F00000100000001 /* assets */,
+			);
+			path = Chrono;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -60,9 +98,6 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				2C85CAC02EC8A8330028865E /* Chrono */,
-			);
 			name = Chrono;
 			packageProductDependencies = (
 			);
@@ -77,15 +112,16 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
 				TargetAttributes = {
 					2C85CABD2EC8A8330028865E = {
-						CreatedOnToolsVersion = 26.1.1;
+						CreatedOnToolsVersion = 15.4;
 					};
 				};
 			};
 			buildConfigurationList = 2C85CAB92EC8A8330028865E /* Build configuration list for PBXProject "Chrono" */;
+			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -94,7 +130,6 @@
 			);
 			mainGroup = 2C85CAB52EC8A8330028865E;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 2C85CABF2EC8A8330028865E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -109,6 +144,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1F001292F00000100000001 /* Assets.xcassets in Resources */,
+				A1F0012C2F00000100000001 /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +156,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1F001202F00000100000001 /* ChronoApp.swift in Sources */,
+				A1F001212F00000100000001 /* ContentView.swift in Sources */,
+				A1F001222F00000100000001 /* ActivityMonitor.swift in Sources */,
+				A1F001232F00000100000001 /* KeyboardShortcutManager.swift in Sources */,
+				A1F001242F00000100000001 /* LiveActivityView.swift in Sources */,
+				A1F001252F00000100000001 /* MenuBarManager.swift in Sources */,
+				A1F001262F00000100000001 /* TimerPopoverView.swift in Sources */,
+				A1F001272F00000100000001 /* TimerStatusBarView.swift in Sources */,
+				A1F0012A2F00000100000001 /* OnboardingView.swift in Sources */,
+				A1F001282F00000100000001 /* TimerViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,6 +177,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -178,7 +226,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -235,7 +283,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -270,7 +318,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
 		};
@@ -301,7 +349,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
 		};

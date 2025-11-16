@@ -7,102 +7,74 @@
 
 import AppKit
 import CoreGraphics
+import Carbon.HIToolbox
 
 class KeyboardShortcutManager {
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
-    private static var activeManagers: [UnsafeMutableRawPointer: KeyboardShortcutManager] = [:]
-    private var managerKey: UnsafeMutableRawPointer?
+    // Carbon hotkey references
+    private var startStopHotKeyRef: EventHotKeyRef?
+    private var resetHotKeyRef: EventHotKeyRef?
+    private var quitHotKeyRef: EventHotKeyRef?
+    private var eventHandlerRef: EventHandlerRef?
     
     var onStartStop: (() -> Void)?
     var onReset: (() -> Void)?
+    var onQuit: (() -> Void)?
     
     func registerShortcuts() {
-        // Create manager key now that self is fully initialized
-        let key = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
-        managerKey = key
+        unregisterShortcuts()
         
-        let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        // Install a Carbon event handler once to receive hotkey events
+        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let selfPointer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        InstallEventHandler(GetApplicationEventTarget(), { (nextHandler, theEvent, userData) -> OSStatus in
+            guard let userData = userData else { return noErr }
+            let manager = Unmanaged<KeyboardShortcutManager>.fromOpaque(userData).takeUnretainedValue()
+            
+            var hotKeyID = EventHotKeyID()
+            GetEventParameter(theEvent, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
+            
+            switch hotKeyID.id {
+            case 1:
+                DispatchQueue.main.async { manager.onStartStop?() }
+            case 2:
+                DispatchQueue.main.async { manager.onReset?() }
+            case 3:
+                DispatchQueue.main.async { manager.onQuit?() }
+            default:
+                break
+            }
+            return noErr
+        }, 1, &eventType, selfPointer, &eventHandlerRef)
         
-        // Retain self for the callback
-        KeyboardShortcutManager.activeManagers[key] = self
+        // Register ⌘⇧S
+        let startID = EventHotKeyID(signature: OSType(0x4348524E), id: 1) // 'CHRN'
+        RegisterEventHotKey(UInt32(kVK_ANSI_S), UInt32(cmdKey | shiftKey), startID, GetApplicationEventTarget(), 0, &startStopHotKeyRef)
         
-        eventTap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .defaultTap,
-            eventsOfInterest: eventMask,
-            callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
-                guard let refcon = refcon else {
-                    return Unmanaged.passUnretained(event)
-                }
-                
-                guard let manager = KeyboardShortcutManager.activeManagers[refcon] else {
-                    return Unmanaged.passUnretained(event)
-                }
-                
-                if type == .keyDown {
-                    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-                    let flags = event.flags
-                    
-                    // Check for ⌘⇧S (Start/Stop)
-                    // S key code: 1 (US keyboard layout)
-                    if keyCode == 1 &&
-                       flags.contains(.maskCommand) &&
-                       flags.contains(.maskShift) {
-                        DispatchQueue.main.async {
-                            manager.onStartStop?()
-                        }
-                        return nil // Consume the event
-                    }
-                    
-                    // Check for ⌘⇧R (Reset)
-                    // R key code: 15 (US keyboard layout)
-                    if keyCode == 15 &&
-                       flags.contains(.maskCommand) &&
-                       flags.contains(.maskShift) {
-                        DispatchQueue.main.async {
-                            manager.onReset?()
-                        }
-                        return nil // Consume the event
-                    }
-                }
-                
-                return Unmanaged.passUnretained(event)
-            },
-            userInfo: key
-        )
+        // Register ⌘⇧R
+        let resetID = EventHotKeyID(signature: OSType(0x4348524E), id: 2)
+        RegisterEventHotKey(UInt32(kVK_ANSI_R), UInt32(cmdKey | shiftKey), resetID, GetApplicationEventTarget(), 0, &resetHotKeyRef)
         
-        guard let eventTap = eventTap else {
-            KeyboardShortcutManager.activeManagers.removeValue(forKey: key)
-            managerKey = nil
-            print("Failed to create event tap. Please grant accessibility permissions in System Settings.")
-            return
-        }
-        
-        CGEvent.tapEnable(tap: eventTap, enable: true)
-        
-        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
-        if let runLoopSource = runLoopSource {
-            CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
-        }
+        // Register ⌘Q
+        let quitID = EventHotKeyID(signature: OSType(0x4348524E), id: 3)
+        RegisterEventHotKey(UInt32(kVK_ANSI_Q), UInt32(cmdKey), quitID, GetApplicationEventTarget(), 0, &quitHotKeyRef)
     }
     
     func unregisterShortcuts() {
-        if let runLoopSource = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
-            self.runLoopSource = nil
+        if let ref = startStopHotKeyRef {
+            UnregisterEventHotKey(ref)
+            startStopHotKeyRef = nil
         }
-        
-        if let eventTap = eventTap {
-            CGEvent.tapEnable(tap: eventTap, enable: false)
-            self.eventTap = nil
+        if let ref = resetHotKeyRef {
+            UnregisterEventHotKey(ref)
+            resetHotKeyRef = nil
         }
-        
-        // Remove from active managers
-        if let key = managerKey {
-            KeyboardShortcutManager.activeManagers.removeValue(forKey: key)
-            managerKey = nil
+        if let ref = quitHotKeyRef {
+            UnregisterEventHotKey(ref)
+            quitHotKeyRef = nil
+        }
+        if let handler = eventHandlerRef {
+            RemoveEventHandler(handler)
+            eventHandlerRef = nil
         }
     }
     
