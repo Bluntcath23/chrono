@@ -2,7 +2,7 @@
 //  ProjectStore.swift
 //  Chrono
 //
-//  Created by Kristina Bekher on 16.10.26.
+//  Created by Ivan Inozemtsev on 16.10.26.
 //
 
 import Foundation
