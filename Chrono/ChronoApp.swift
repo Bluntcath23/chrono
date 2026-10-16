@@ -8,14 +8,11 @@
 import SwiftUI
 import AppKit
 import UserNotifications
-import Combine
 
 @main
 struct ChronoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-	
-	static let showOnboardingNotification = Notification.Name("Chrono.ShowOnboardingDebug")
-    
+
     var body: some Scene {
         Settings {
             EmptyView()
@@ -23,119 +20,40 @@ struct ChronoApp: App {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    private var store: ProjectStore?
     private var menuBarManager: MenuBarManager?
-    private var viewModel: TimerViewModel?
-	private var onboardingWindow: NSWindow?
-	private var cancellables: Set<AnyCancellable> = []
-    
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-		// Hide dock icon while running (app will still appear in Launchpad if installed in /Applications)
+        // Menu bar only (LSUIElement = YES also hides the Dock icon before this runs).
         NSApp.setActivationPolicy(.accessory)
-        
-        // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
-            if let error = error {
-                print("Notification authorization error: \(error)")
-            }
-        }
-        
-        // Create and setup menu bar
-        let vm = TimerViewModel()
-        let mbm = MenuBarManager(viewModel: vm)
-        
-        // Store references first to prevent deallocation
-        self.viewModel = vm
-        self.menuBarManager = mbm
-        
-        // Then setup (which is now async)
-        mbm.setup()
-		
-		// Show onboarding on first launch
-		showOnboardingIfNeeded()
-		
-		// Debug trigger to show onboarding from menu
-		NotificationCenter.default.addObserver(
-			forName: ChronoApp.showOnboardingNotification,
-			object: nil,
-			queue: .main
-		) { [weak self] _ in
-			self?.presentOnboarding(force: true)
-		}
+
+        // Notification authorization is requested lazily (first timer start /
+        // first auto-pause), not at launch.
+        UNUserNotificationCenter.current().delegate = self
+
+        let store = ProjectStore()
+        let manager = MenuBarManager(store: store)
+        self.store = store
+        self.menuBarManager = manager
+        manager.setup()
     }
-    
+
     func applicationWillTerminate(_ notification: Notification) {
-        menuBarManager = nil
-        viewModel = nil
+        menuBarManager?.shutdown()
+        store?.flush()
     }
-    
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // Prevent app from showing windows when clicking dock icon (shouldn't appear anyway)
-        return false
+        false
     }
-	
-	private func showOnboardingIfNeeded() {
-		let defaults = UserDefaults.standard
-		let hasSeenOnboarding = defaults.bool(forKey: "hasSeenOnboarding")
-		guard !hasSeenOnboarding else { return }
-		
-		let hosting = NSHostingController(rootView: OnboardingView(onFinish: { [weak self] in
-			UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-			self?.onboardingWindow?.close()
-			self?.onboardingWindow = nil
-		}))
-		
-		let window = NSWindow(contentViewController: hosting)
-		window.titleVisibility = .hidden
-		window.titlebarAppearsTransparent = true
-		window.styleMask = [.titled, .fullSizeContentView]
-		window.standardWindowButton(.closeButton)?.isHidden = true
-		window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-		window.standardWindowButton(.zoomButton)?.isHidden = true
-		window.isOpaque = false
-		window.backgroundColor = .clear
-		window.setContentSize(NSSize(width: 720, height: 560))
-		window.center()
-		window.isReleasedWhenClosed = false
-		window.level = .normal
-		
-		self.onboardingWindow = window
-		window.makeKeyAndOrderFront(nil)
-		NSApp.activate(ignoringOtherApps: true)
-	}
-	
-	// Present onboarding regardless of first-launch state (debug helper)
-	private func presentOnboarding(force: Bool) {
-		if onboardingWindow != nil {
-			onboardingWindow?.makeKeyAndOrderFront(nil)
-			NSApp.activate(ignoringOtherApps: true)
-			return
-		}
-		
-		let hosting = NSHostingController(rootView: OnboardingView(onFinish: { [weak self] in
-			if !force {
-				UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-			}
-			self?.onboardingWindow?.close()
-			self?.onboardingWindow = nil
-		}))
-		
-		let window = NSWindow(contentViewController: hosting)
-		window.titleVisibility = .hidden
-		window.titlebarAppearsTransparent = true
-		window.styleMask = [.titled, .fullSizeContentView]
-		window.standardWindowButton(.closeButton)?.isHidden = true
-		window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-		window.standardWindowButton(.zoomButton)?.isHidden = true
-		window.isOpaque = false
-		window.backgroundColor = .clear
-		window.setContentSize(NSSize(width: 720, height: 560))
-		window.center()
-		window.isReleasedWhenClosed = false
-		window.level = .normal
-		
-		self.onboardingWindow = window
-		window.makeKeyAndOrderFront(nil)
-		NSApp.activate(ignoringOtherApps: true)
-	}
+
+    // Show auto-pause notifications even while Chrono is the active app.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
+    }
 }

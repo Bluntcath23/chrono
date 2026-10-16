@@ -5,90 +5,66 @@
 //  Created by Ivan on 15.11.25.
 //
 
-import AppKit
-import Combine
-import IOKit
-import IOKit.hid
+import Foundation
+import CoreGraphics
 
-class ActivityMonitor {
-    private var lastActivityTime: Date = Date()
-    private var monitorTimer: Timer?
-    private var eventMonitor: Any?
-    private let inactivityThreshold: TimeInterval = 300
-    
-    var onInactivityDetected: (() -> Void)?
-    
+/// Detects user inactivity by polling the system's "seconds since last input
+/// event" counter. Needs no permissions (no event taps, no Input Monitoring),
+/// so it works inside the App Sandbox.
+///
+/// Only polls while monitoring is on — `MenuBarManager` turns it on while the
+/// timer runs and off when it stops, so an idle Chrono costs no wakeups.
+@MainActor final class ActivityMonitor {
+    /// Idle time after which a running timer is auto-paused.
+    static let inactivityThreshold: TimeInterval = 300
+    static let pollInterval: TimeInterval = 5
+
+    /// Fired once per idle period with the date of the last user input.
+    /// Re-arms once the user is active again.
+    var onInactivityDetected: ((Date) -> Void)?
+
+    private var timer: Timer?
+    private var isArmed = true
+
+    var isMonitoring: Bool { timer != nil }
+
     func startMonitoring() {
-        lastActivityTime = Date()
-        
-        // Monitor mouse and keyboard events
-        // Note: Requires accessibility permissions if app is sandboxed
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
-            self?.lastActivityTime = Date()
-        }
-        
-        if eventMonitor == nil {
-            print("Warning: Could not set up global event monitoring. Activity detection may not work. Please grant accessibility permissions.")
-        }
-        
-        // Check for inactivity every second on the main runloop (common modes)
-        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.checkInactivity()
-        }
-        monitorTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
-    }
-    
-    func stopMonitoring() {
-        monitorTimer?.invalidate()
-        monitorTimer = nil
-        
-        if let eventMonitor = eventMonitor {
-            NSEvent.removeMonitor(eventMonitor)
-            self.eventMonitor = nil
-        }
-    }
-    
-    func resetActivity() {
-        lastActivityTime = Date()
-    }
-    
-    private func checkInactivity() {
-        let timeSinceLastActivity = Date().timeIntervalSince(lastActivityTime)
-        let systemIdle = systemIdleTimeSeconds()
-        let effectiveIdle = max(timeSinceLastActivity, systemIdle)
-        
-        if effectiveIdle >= inactivityThreshold {
-            // Ensure handler runs on main (UI and MainActor-bound state)
-            DispatchQueue.main.async { [weak self] in
-                self?.onInactivityDetected?()
+        guard timer == nil else { return }
+        isArmed = true
+        let timer = Timer(timeInterval: Self.pollInterval, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self else {
+                    timer.invalidate()
+                    return
+                }
+                self.poll()
             }
-            resetActivity() // Reset to avoid multiple notifications
         }
+        timer.tolerance = 1
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
-    
-    // Uses IOHIDSystem to get system-wide idle time (in seconds) without Accessibility permissions.
-    private func systemIdleTimeSeconds() -> TimeInterval {
-        let matching = IOServiceMatching("IOHIDSystem")
-        let service = IOServiceGetMatchingService(kIOMainPortDefault, matching)
-        guard service != 0 else { return 0 }
-        defer { IOObjectRelease(service) }
-        
-        var unmanaged: Unmanaged<CFTypeRef>?
-        let key = "HIDIdleTime" as CFString
-        let result = IORegistryEntryCreateCFProperty(service, key, kCFAllocatorDefault, 0)
-        unmanaged = result
-        guard let valueRef = unmanaged?.takeRetainedValue() else { return 0 }
-        
-        if let number = valueRef as? NSNumber {
-            let nanoseconds = number.uint64Value
-            return TimeInterval(Double(nanoseconds) / 1_000_000_000.0)
+
+    func stopMonitoring() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func poll() {
+        let idle = Self.secondsSinceLastInput()
+        guard idle >= Self.inactivityThreshold else {
+            isArmed = true
+            return
         }
-        return 0
+        guard isArmed else { return }
+        isArmed = false
+        onInactivityDetected?(Date().addingTimeInterval(-idle))
     }
-    
-    deinit {
-        stopMonitoring()
+
+    /// Seconds since the last keyboard / mouse / trackpad event of any kind
+    /// (`kCGAnyInputEventType`) in the current login session.
+    nonisolated static func secondsSinceLastInput() -> TimeInterval {
+        guard let anyInput = CGEventType(rawValue: ~0) else { return 0 }
+        return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
     }
 }
-

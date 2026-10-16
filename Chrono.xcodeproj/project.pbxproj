@@ -8,33 +8,45 @@
 
 /* Begin PBXBuildFile section */
 		A1F001202F00000100000001 /* ChronoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001102F00000100000001 /* ChronoApp.swift */; };
-		A1F001212F00000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001112F00000100000001 /* ContentView.swift */; };
+
 		A1F001222F00000100000001 /* ActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001122F00000100000001 /* ActivityMonitor.swift */; };
 		A1F001232F00000100000001 /* KeyboardShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001132F00000100000001 /* KeyboardShortcutManager.swift */; };
-		A1F001242F00000100000001 /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001142F00000100000001 /* LiveActivityView.swift */; };
+
 		A1F001252F00000100000001 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001152F00000100000001 /* MenuBarManager.swift */; };
 		A1F001262F00000100000001 /* TimerPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001162F00000100000001 /* TimerPopoverView.swift */; };
 		A1F001272F00000100000001 /* TimerStatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001172F00000100000001 /* TimerStatusBarView.swift */; };
-		A1F001282F00000100000001 /* TimerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001182F00000100000001 /* TimerViewModel.swift */; };
-		A1F0012A2F00000100000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0011A2F00000100000001 /* OnboardingView.swift */; };
 		A1F001292F00000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1F001192F00000100000001 /* Assets.xcassets */; };
 		A1F0012C2F00000100000001 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = A1F0012B2F00000100000001 /* assets */; };
+		A1F001302F00000100000002 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001302F00000100000001 /* Project.swift */; };
+		A1F001312F00000100000002 /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001312F00000100000001 /* ProjectStore.swift */; };
+		A1F001322F00000100000002 /* TimeFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001322F00000100000001 /* TimeFormat.swift */; };
+		A1F001332F00000100000002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001332F00000100000001 /* Theme.swift */; };
+		A1F001342F00000100000002 /* ProjectRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001342F00000100000001 /* ProjectRowView.swift */; };
+		A1F001352F00000100000002 /* InfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001352F00000100000001 /* InfoView.swift */; };
+		A1F001362F00000100000002 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F001362F00000100000001 /* LaunchAtLogin.swift */; };
+		A1F001372F00000100000002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1F001372F00000100000001 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		2C85CABE2EC8A8330028865E /* Chrono.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chrono.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1F001102F00000100000001 /* ChronoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChronoApp.swift; sourceTree = "<group>"; };
-		A1F001112F00000100000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+
 		A1F001122F00000100000001 /* ActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityMonitor.swift; sourceTree = "<group>"; };
 		A1F001132F00000100000001 /* KeyboardShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutManager.swift; sourceTree = "<group>"; };
-		A1F001142F00000100000001 /* LiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityView.swift; sourceTree = "<group>"; };
+
 		A1F001152F00000100000001 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		A1F001162F00000100000001 /* TimerPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerPopoverView.swift; sourceTree = "<group>"; };
 		A1F001172F00000100000001 /* TimerStatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerStatusBarView.swift; sourceTree = "<group>"; };
-		A1F001182F00000100000001 /* TimerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerViewModel.swift; sourceTree = "<group>"; };
-		A1F0011A2F00000100000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A1F001192F00000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1F0012B2F00000100000001 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = "<group>"; };
+		A1F001302F00000100000001 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
+		A1F001312F00000100000001 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
+		A1F001322F00000100000001 /* TimeFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeFormat.swift; sourceTree = "<group>"; };
+		A1F001332F00000100000001 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A1F001342F00000100000001 /* ProjectRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRowView.swift; sourceTree = "<group>"; };
+		A1F001352F00000100000001 /* InfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoView.swift; sourceTree = "<group>"; };
+		A1F001362F00000100000001 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		A1F001372F00000100000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,15 +80,21 @@
 			isa = PBXGroup;
 			children = (
 				A1F001102F00000100000001 /* ChronoApp.swift */,
-				A1F001112F00000100000001 /* ContentView.swift */,
+
 				A1F001122F00000100000001 /* ActivityMonitor.swift */,
 				A1F001132F00000100000001 /* KeyboardShortcutManager.swift */,
-				A1F001142F00000100000001 /* LiveActivityView.swift */,
+
 				A1F001152F00000100000001 /* MenuBarManager.swift */,
 				A1F001162F00000100000001 /* TimerPopoverView.swift */,
 				A1F001172F00000100000001 /* TimerStatusBarView.swift */,
-				A1F001182F00000100000001 /* TimerViewModel.swift */,
-				A1F0011A2F00000100000001 /* OnboardingView.swift */,
+				A1F001302F00000100000001 /* Project.swift */,
+				A1F001312F00000100000001 /* ProjectStore.swift */,
+				A1F001322F00000100000001 /* TimeFormat.swift */,
+				A1F001332F00000100000001 /* Theme.swift */,
+				A1F001342F00000100000001 /* ProjectRowView.swift */,
+				A1F001352F00000100000001 /* InfoView.swift */,
+				A1F001362F00000100000001 /* LaunchAtLogin.swift */,
+				A1F001372F00000100000001 /* PrivacyInfo.xcprivacy */,
 				A1F001192F00000100000001 /* Assets.xcassets */,
 				A1F0012B2F00000100000001 /* assets */,
 			);
@@ -146,6 +164,7 @@
 			files = (
 				A1F001292F00000100000001 /* Assets.xcassets in Resources */,
 				A1F0012C2F00000100000001 /* assets in Resources */,
+				A1F001372F00000100000002 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,15 +176,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1F001202F00000100000001 /* ChronoApp.swift in Sources */,
-				A1F001212F00000100000001 /* ContentView.swift in Sources */,
+
 				A1F001222F00000100000001 /* ActivityMonitor.swift in Sources */,
 				A1F001232F00000100000001 /* KeyboardShortcutManager.swift in Sources */,
-				A1F001242F00000100000001 /* LiveActivityView.swift in Sources */,
+
 				A1F001252F00000100000001 /* MenuBarManager.swift in Sources */,
 				A1F001262F00000100000001 /* TimerPopoverView.swift in Sources */,
 				A1F001272F00000100000001 /* TimerStatusBarView.swift in Sources */,
-				A1F0012A2F00000100000001 /* OnboardingView.swift in Sources */,
-				A1F001282F00000100000001 /* TimerViewModel.swift in Sources */,
+				A1F001302F00000100000002 /* Project.swift in Sources */,
+				A1F001312F00000100000002 /* ProjectStore.swift in Sources */,
+				A1F001322F00000100000002 /* TimeFormat.swift in Sources */,
+				A1F001332F00000100000002 /* Theme.swift in Sources */,
+				A1F001342F00000100000002 /* ProjectRowView.swift in Sources */,
+				A1F001352F00000100000002 /* InfoView.swift in Sources */,
+				A1F001362F00000100000002 /* LaunchAtLogin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,20 +323,22 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Ivan Inozemtsev";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = I.I..Chrono;
+				MARKETING_VERSION = 2.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inozemtsev.Chrono;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -330,20 +356,22 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Ivan Inozemtsev";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = I.I..Chrono;
+				MARKETING_VERSION = 2.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inozemtsev.Chrono;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
