@@ -220,14 +220,14 @@ struct TimerPopoverView: View {
         HStack(spacing: Theme.Buttons.spacing) {
             Button(store.isRunning ? "Stop" : "Start") {
                 endTransientMode()
-                store.toggle()
+                store.toggle(source: "Start/Stop button")
             }
             .buttonStyle(PillButtonStyle(fill: store.isRunning ? Theme.Colors.orange : Theme.Colors.blue))
             .help("Start / Stop ⌘⇧S")
 
             Button("Reset") {
                 endTransientMode()
-                store.resetActive()
+                store.resetActive(source: "Reset button")
             }
             .buttonStyle(PillButtonStyle(fill: Theme.Colors.buttonNeutral, label: Theme.Colors.text))
             .help("Reset current project ⌘⇧R")
@@ -312,13 +312,13 @@ struct TimerPopoverView: View {
                 shortcutNumber: index < 9 ? index + 1 : nil,
                 canDelete: store.canDelete,
                 showsHoverControls: mode == .idle,
-                onSelect: {
+                onSelect: { source in
                     endTransientMode()
-                    store.select(project.id)
+                    store.select(project.id, source: source)
                 },
-                onSwitchAndStart: {
+                onSwitchAndStart: { source in
                     endTransientMode()
-                    store.switchAndStart(project.id)
+                    store.switchAndStart(project.id, source: source)
                 },
                 onRename: { beginRename(project.id) },
                 onResetTime: { confirm(.reset, project.id) },
@@ -338,7 +338,7 @@ struct TimerPopoverView: View {
                 onCancel: { mode = .idle },
                 onConfirm: {
                     mode = .idle
-                    store.delete(project.id)
+                    store.delete(project.id, source: "delete card")
                 }
             )
         case .reset:
@@ -349,7 +349,7 @@ struct TimerPopoverView: View {
                 onCancel: { mode = .idle },
                 onConfirm: {
                     mode = .idle
-                    store.resetTime(for: project.id)
+                    store.resetTime(for: project.id, source: "reset card")
                 }
             )
         }
@@ -434,8 +434,8 @@ struct TimerPopoverView: View {
         mode = .idle
         draftName = ""
         switch target {
-        case .newProject: store.addProject(named: name)
-        case .rename(let id): store.rename(id, to: name)
+        case .newProject: store.addProject(named: name, source: "new project field")
+        case .rename(let id): store.rename(id, to: name, source: "rename field")
         }
     }
 
@@ -484,6 +484,10 @@ struct TimerPopoverView: View {
             .subtracting([.capsLock, .numericPad, .function])
         let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
 
+        // Auto-repeat (a key held down, or a stuck key after wake) never
+        // triggers panel actions; text fields still get their repeats.
+        if event.isARepeat { return !isTextEditing }
+
         // Esc: one transient layer at a time, else close the panel.
         if event.keyCode == KeyCode.escape && flags.isEmpty {
             switch mode {
@@ -505,7 +509,10 @@ struct TimerPopoverView: View {
 
         if flags == [.command, .shift], let number = KeyCode.digit(event.keyCode) {
             if mode != .info { endTransientMode() }
-            store.switchAndStart(index: number - 1)
+            store.switchAndStart(
+                index: number - 1,
+                source: "panel key ⌘⇧\(number) keyCode=\(event.keyCode) flags=\(event.modifierFlags.rawValue) panelKey=\(event.window?.isKeyWindow == true) visible=\(event.window?.isVisible == true)"
+            )
             return true
         }
 
@@ -586,6 +593,7 @@ private struct PanelKeyMonitor: NSViewRepresentable {
                     guard let self,
                           let window = self.view?.window,
                           keyEvent.window === window,
+                          window.isVisible,
                           window.isKeyWindow,
                           let handler = self.handler
                     else { return false }

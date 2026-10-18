@@ -27,7 +27,7 @@ The app deliberately avoids standard `NSPopover` chrome. A custom `NSPanel` (`Me
 - **Projects** — Unlimited projects, each with its own cumulative time; one active project, at most one running timer
 - **Fast switching** — Click a row to make it active, ▶︎ to switch & start, ⌘⇧1…9 while the panel is open
 - **Inline editing** — New / rename in place; Reset Time… and Delete Project… confirm with an inline card (last project can't be deleted)
-- **Smart auto-pause** — Pauses the active project after 5 min idle or when the Mac sleeps; idle time is not counted; local notification
+- **Smart auto-pause** — Pauses the running project after exactly 5 min without keyboard/mouse input (those 5 min stay counted, nothing after them), or immediately when the Mac sleeps or the screen locks; a local notification names the project
 - **Persistence** — Projects and times saved locally (JSON in the sandbox container), crash-safe checkpoints every 30 s
 - **Liquid glass UI** — 300 pt panel, 20 pt corners, white text in light and dark appearance
 - **Stable menu bar pill** — Tabular monospaced digits; width doesn't jitter as time changes
@@ -89,6 +89,27 @@ xcodebuild -scheme Chrono \
   build
 ```
 
+### Testing auto-pause quickly
+
+The idle threshold defaults to 300 s. To test with a shorter one, set the override (≥ 5 s) and relaunch Chrono:
+
+```bash
+# Simplest, works for every build: pass it for one run
+open Chrono.app --args -ChronoIdleThresholdSeconds 20
+
+# Or persist it. Signed builds are sandboxed and read prefs from their container:
+defaults write ~/Library/Containers/com.inozemtsev.Chrono/Data/Library/Preferences/com.inozemtsev.Chrono ChronoIdleThresholdSeconds 20
+# Unsigned local builds (CODE_SIGNING_ALLOWED=NO) aren't sandboxed:
+defaults write com.inozemtsev.Chrono ChronoIdleThresholdSeconds 20
+# Undo: the same command with `delete` instead of `write` and without the value
+```
+
+Watch what happens, with the reason for every start/stop/switch:
+
+```bash
+/usr/bin/log stream --level info --predicate 'subsystem == "com.inozemtsev.Chrono"'
+```
+
 ---
 
 ## Distribution
@@ -144,7 +165,7 @@ The **build number** (`CURRENT_PROJECT_VERSION` in Xcode, `BUILD_NUMBER` in `bui
 - Multiple projects, each with its own cumulative time; one active project, one running timer
 - New UI per the 2.0 Figma design: glass panel, project list with total, hover ▶︎ / ⋯, inline new/rename, inline delete & reset confirmations
 - Info is now a separate screen (shortcuts, Smart Auto-Pause, launch at login, version)
-- Auto-pause per project with sleep detection; idle time is excluded from the total
+- Auto-pause per project with sleep and screen-lock detection; time after the 5-minute idle threshold is not counted
 - Persistence: projects saved locally as JSON with periodic checkpoints; a crashed session is credited up to the last checkpoint
 - Launch at login (SMAppService), off by default
 - Removed the global ⌘Q hotkey that hijacked Quit in every app; only ⌘⇧S / ⌘⇧R are global

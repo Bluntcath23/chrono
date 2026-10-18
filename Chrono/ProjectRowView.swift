@@ -26,13 +26,20 @@ struct ProjectRowView: View {
     /// hover controls are hidden so their menu key equivalents can't fire.
     var showsHoverControls: Bool = true
 
-    var onSelect: () -> Void = {}
-    var onSwitchAndStart: () -> Void = {}
+    /// The argument names the trigger ("row click", "row ▶ button",
+    /// "accessibility") for the store's log.
+    var onSelect: (String) -> Void = { _ in }
+    var onSwitchAndStart: (String) -> Void = { _ in }
     var onRename: () -> Void = {}
     var onResetTime: () -> Void = {}
     var onDelete: () -> Void = {}
 
     @State private var isHovered = false
+    /// First pointer location seen since the hover began. The ▶︎ / ⋯ controls
+    /// appear only after the pointer actually MOVES inside the row — not when
+    /// the panel opens (or the Mac wakes) with the cursor already over it, so
+    /// a stray wake click can't land on ▶︎ and switch projects.
+    @State private var hoverOrigin: CGPoint?
 
     private var controlsVisible: Bool { isHovered && showsHoverControls }
     /// ▶︎ is pointless on the row that is already running.
@@ -67,7 +74,7 @@ struct ProjectRowView: View {
             }
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
-            .simultaneousGesture(TapGesture(count: 1).onEnded { onSelect() })
+            .simultaneousGesture(TapGesture(count: 1).onEnded { onSelect("row click") })
 
             if controlsVisible {
                 HStack(spacing: Theme.Row.spacing) {
@@ -76,7 +83,7 @@ struct ProjectRowView: View {
                             systemImage: "play.fill",
                             alwaysFilled: true,
                             accessibilityLabel: "Switch and start \(name)",
-                            action: onSwitchAndStart
+                            action: { onSwitchAndStart("row ▶ button") }
                         )
                         .help(playHelp)
                     }
@@ -97,7 +104,23 @@ struct ProjectRowView: View {
         .frame(maxWidth: .infinity)
         .background(Capsule().fill(rowFill))
         .contentShape(Capsule())
-        .onHover { isHovered = $0 }
+        .onContinuousHover { phase in
+            switch phase {
+            case .active(let location):
+                if let origin = hoverOrigin {
+                    if !isHovered && location != origin { isHovered = true }
+                } else {
+                    hoverOrigin = location
+                }
+            case .ended:
+                isHovered = false
+                hoverOrigin = nil
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chronoPanelDidClose)) { _ in
+            isHovered = false
+            hoverOrigin = nil
+        }
         .animation(.easeOut(duration: 0.12), value: controlsVisible)
         .contextMenu {
             ProjectMenuItems(canDelete: canDelete, onRename: onRename, onResetTime: onResetTime, onDelete: onDelete)
@@ -105,8 +128,8 @@ struct ProjectRowView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(name), \(TimeFormat.duration(elapsed))\(isRunning ? ", running" : "")")
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction { onSelect() }
-        .accessibilityAction(named: "Switch and start") { onSwitchAndStart() }
+        .accessibilityAction { onSelect("accessibility") }
+        .accessibilityAction(named: "Switch and start") { onSwitchAndStart("accessibility") }
         .accessibilityAction(named: "Rename") { onRename() }
         .accessibilityAction(named: "Reset Time") { onResetTime() }
         .accessibilityAction(named: "Delete Project") { if canDelete { onDelete() } }

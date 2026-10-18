@@ -24,12 +24,23 @@ final class ChronoPanel: NSPanel {
     var visibleHeight: CGFloat = .greatestFiniteMagnitude
     /// Called for a mouse-down that reaches the window below the visible panel.
     var onMouseDownOutsideChrome: (() -> Void)?
+    /// `systemUptime` before which mouse clicks are ignored (set on every show).
+    /// `NSEvent.timestamp` uses the same clock. Drops stale clicks queued before
+    /// the panel appeared (e.g. a wake click), so they can't hit ▶︎ or a row.
+    var ignoresClicksBeforeUptime: TimeInterval = 0
+
+    private static let clickTypes: Set<NSEvent.EventType> = [
+        .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp, .otherMouseDown, .otherMouseUp,
+    ]
 
     /// Fallback for click-through: normally the window server sends clicks on
     /// the transparent canvas to the app behind (per-pixel alpha hit testing,
     /// which only applies while `ignoresMouseEvents` is never assigned). If a
     /// click lands there anyway, treat it as an outside click.
     override func sendEvent(_ event: NSEvent) {
+        if Self.clickTypes.contains(event.type), event.timestamp < ignoresClicksBeforeUptime {
+            return
+        }
         if [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(event.type),
            event.locationInWindow.y < frame.height - visibleHeight {
             onMouseDownOutsideChrome?()
@@ -296,6 +307,7 @@ final class ChronoPanel: NSPanel {
 
         panel.setFrame(NSRect(x: x, y: top - height, width: width, height: height),
                        display: false, animate: false)
+        panel.ignoresClicksBeforeUptime = ProcessInfo.processInfo.systemUptime + 0.3
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate()
         panel.invalidateShadow()
@@ -311,7 +323,7 @@ final class ChronoPanel: NSPanel {
     ///   taking focus (outside click, resign active).
     private func hidePanel(reason: String, restoreFocus: Bool = false) {
         guard let panel, panel.isVisible else { return }
-        Self.log.info("hide panel: \(reason, privacy: .public)")
+        Self.log.notice("hide panel: \(reason, privacy: .public)")
         panel.orderOut(nil)
         removeGlobalMouseMonitor()
         pillState.isPanelOpen = false
@@ -436,11 +448,21 @@ final class ChronoPanel: NSPanel {
         observe(local, NSApplication.didResignActiveNotification) { manager in
             manager.hidePanel(reason: "app resigned active")
         }
+        // Never leave the panel open (key, under the cursor) while the user is
+        // away: a wake click or tap could otherwise land on ▶︎ / a row.
         observe(workspace, NSWorkspace.willSleepNotification) { manager in
+            manager.hidePanel(reason: "Mac going to sleep")
             manager.autoPause(reason: "Mac went to sleep")
         }
         observe(distributed, Notification.Name("com.apple.screenIsLocked")) { manager in
+            manager.hidePanel(reason: "screen locked")
             manager.autoPause(reason: "screen locked")
+        }
+        observe(workspace, NSWorkspace.screensDidSleepNotification) { manager in
+            manager.hidePanel(reason: "display sleep")
+        }
+        observe(workspace, NSWorkspace.sessionDidResignActiveNotification) { manager in
+            manager.hidePanel(reason: "user session switched")
         }
         observe(workspace, NSWorkspace.willPowerOffNotification) { manager in
             manager.store.flush()
@@ -464,17 +486,27 @@ final class ChronoPanel: NSPanel {
     // MARK: - Shortcuts & auto-pause
 
     private func setupShortcuts() {
-        shortcuts.onStartStop = { [weak self] in self?.store.toggle() }
-        shortcuts.onReset = { [weak self] in self?.store.resetActive() }
+        shortcuts.onStartStop = { [weak self] in self?.store.toggle(source: "global hotkey ⌘⇧S") }
+        shortcuts.onReset = { [weak self] in self?.store.resetActive(source: "global hotkey ⌘⇧R") }
         shortcuts.registerShortcuts()
     }
 
     private func setupAutoPause() {
-        activityMonitor.onInactivityDetected = { [weak self] lastActivity in
+        activityMonitor.onInactivityDetected = { [weak self] lastInput in
             guard let self, self.store.isRunning else { return }
+            // Capture the running project before stopping, so the notification
+            // always names the project that was paused.
             let name = self.store.activeProject.name
-            self.store.stop(creditingUntil: lastActivity)
-            let minutes = max(1, Int(Date().timeIntervalSince(lastActivity) / 60))
+            let threshold = self.activityMonitor.threshold
+            self.hidePanel(reason: "auto-pause (idle)")
+            // The idle minutes up to the threshold stay counted; anything after
+            // it doesn't — even if this check runs late. The clock never moves
+            // backwards at the pause.
+            // Idle can't start before the timer did (the click that started it is
+            // usually the last input, a few ms earlier).
+            let idleStart = max(lastInput, self.store.runningStart ?? lastInput)
+            self.store.stop(creditingUntil: idleStart.addingTimeInterval(threshold), source: "auto-pause (idle)")
+            let minutes = max(1, Int((threshold / 60).rounded()))
             self.notifier.post("\(name) paused — away for \(minutes) min")
         }
     }
@@ -482,7 +514,7 @@ final class ChronoPanel: NSPanel {
     private func autoPause(reason: String) {
         guard store.isRunning else { return }
         let name = store.activeProject.name
-        store.stop()
+        store.stop(source: "auto-pause (\(reason))")
         notifier.post("\(name) paused — \(reason)")
     }
 }
@@ -492,6 +524,7 @@ final class ChronoPanel: NSPanel {
 /// Posts auto-pause notifications. Authorization is requested lazily — on the
 /// first timer start or the first notification — never at launch.
 @MainActor final class AutoPauseNotifier {
+    private static let log = Logger(subsystem: "com.inozemtsev.Chrono", category: "Notifications")
     private var hasRequested = false
 
     func requestAuthorizationIfNeeded() {
@@ -504,6 +537,7 @@ final class ChronoPanel: NSPanel {
         hasRequested = true
         Task {
             guard await Self.authorize() else { return }
+            Self.log.notice("posting auto-pause notification")
             let content = UNMutableNotificationContent()
             content.title = "Chrono"
             content.body = body
@@ -512,7 +546,7 @@ final class ChronoPanel: NSPanel {
             do {
                 try await UNUserNotificationCenter.current().add(request)
             } catch {
-                print("AutoPauseNotifier: could not deliver notification: \(error)")
+                Self.log.error("could not deliver notification: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -527,10 +561,11 @@ final class ChronoPanel: NSPanel {
             do {
                 return try await center.requestAuthorization(options: [.alert, .sound])
             } catch {
-                print("AutoPauseNotifier: authorization failed: \(error)")
+                Self.log.error("authorization failed: \(error.localizedDescription, privacy: .public)")
                 return false
             }
         default:
+            log.notice("notifications not allowed (status \(status.rawValue, privacy: .public)); turn them on in System Settings → Notifications → Chrono")
             return false
         }
     }

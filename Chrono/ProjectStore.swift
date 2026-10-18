@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import os
 
 /// Single source of truth for projects and the (single) running timer.
 ///
@@ -19,6 +20,9 @@ import Combine
     @Published private(set) var tick: Date          // updated every 0.1 s while running; drives UI refresh
 
     static let defaultProjectName = "My Project"
+    /// Every mutation is logged with its `source` (the UI control, hotkey or
+    /// system event that caused it): `log stream --predicate 'subsystem == "com.inozemtsev.Chrono"'`.
+    private static let log = Logger(subsystem: "com.inozemtsev.Chrono", category: "Store")
     static let checkpointInterval: TimeInterval = 30
 
     /// `~/Library/Application Support/Chrono/projects.json` (inside the sandbox container).
@@ -32,6 +36,8 @@ import Combine
     private let storageURL: URL
     private let now: () -> Date
     private var runningSince: Date?
+    /// When the current running segment started; `nil` while paused.
+    var runningStart: Date? { runningSince }
     private var lastCheckpoint: Date?
     private var tickTimer: Timer?
 
@@ -49,7 +55,9 @@ import Combine
             if let since = loaded.runningSince,
                let index = projects.firstIndex(where: { $0.id == activeID }) {
                 let checkpoint = loaded.lastCheckpoint ?? since
-                projects[index].accumulated += max(0, checkpoint.timeIntervalSince(since))
+                let credited = max(0, checkpoint.timeIntervalSince(since))
+                projects[index].accumulated += credited
+                Self.log.notice("recover [load] project=\(projects[index].name, privacy: .private) credited=\(credited, privacy: .public)s, now paused")
             }
             self.projects = projects
             self.activeProjectID = activeID
@@ -94,8 +102,9 @@ import Combine
 
     // MARK: - Timer control
 
-    func start() {
+    func start(source: String = "unspecified") {
         guard !isRunning else { return }
+        Self.log.notice("start [\(source, privacy: .public)] project=\(self.activeProject.name, privacy: .private)")
         let date = now()
         runningSince = date
         lastCheckpoint = date
@@ -106,15 +115,16 @@ import Combine
     }
 
     /// Credits time up to now.
-    func stop() {
-        stop(creditingUntil: now())
+    func stop(source: String = "unspecified") {
+        stop(creditingUntil: now(), source: source)
     }
 
     /// Credits only up to `date` (clamped to `[runningSince, now]`). Used by
-    /// auto-pause so idle time is dropped.
-    func stop(creditingUntil date: Date) {
+    /// the idle auto-pause so time after the idle threshold isn't counted.
+    func stop(creditingUntil date: Date, source: String = "unspecified") {
         guard isRunning, let since = runningSince else { return }
         let end = max(since, min(date, now()))
+        Self.log.notice("stop [\(source, privacy: .public)] project=\(self.activeProject.name, privacy: .private) segment=\(end.timeIntervalSince(since), privacy: .public)s creditedUntil=\(end.timeIntervalSince1970, privacy: .public) now=\(self.now().timeIntervalSince1970, privacy: .public)")
         if let index = index(of: activeProjectID) {
             projects[index].accumulated += end.timeIntervalSince(since)
         }
@@ -122,13 +132,14 @@ import Combine
         save()
     }
 
-    func toggle() {
-        isRunning ? stop() : start()
+    func toggle(source: String = "unspecified") {
+        isRunning ? stop(source: "toggle←" + source) : start(source: "toggle←" + source)
     }
 
     /// Matches v1 Reset semantics: reset STOPS the timer and zeroes the active
     /// project. (Unlike `resetTime(for:)`, which keeps a running timer going.)
-    func resetActive() {
+    func resetActive(source: String = "unspecified") {
+        Self.log.notice("resetActive [\(source, privacy: .public)] project=\(self.activeProject.name, privacy: .private)")
         if isRunning { endRunningState() }   // live segment is discarded
         if let index = index(of: activeProjectID) {
             projects[index].accumulated = 0
@@ -138,8 +149,9 @@ import Combine
 
     /// Zeroes a project's time. If the timer is running on that project it
     /// keeps running, restarting from 0.
-    func resetTime(for id: UUID) {
+    func resetTime(for id: UUID, source: String = "unspecified") {
         guard let index = index(of: id) else { return }
+        Self.log.notice("resetTime [\(source, privacy: .public)] project=\(self.projects[index].name, privacy: .private)")
         projects[index].accumulated = 0
         if isRunning, id == activeProjectID {
             let date = now()
@@ -153,41 +165,45 @@ import Combine
     /// Makes `id` active. If the timer is running (on the previous project) it
     /// is stopped and credited; the new project starts paused. Selecting the
     /// already-active project is a no-op.
-    func select(_ id: UUID) {
-        guard id != activeProjectID, index(of: id) != nil else { return }
-        if isRunning { stop() }
+    func select(_ id: UUID, source: String = "unspecified") {
+        guard id != activeProjectID, let index = index(of: id) else { return }
+        Self.log.notice("select [\(source, privacy: .public)] \(self.activeProject.name, privacy: .private) → \(self.projects[index].name, privacy: .private)")
+        if isRunning { stop(source: "select←" + source) }
         activeProjectID = id
         save()
     }
 
-    func switchAndStart(_ id: UUID) {
-        guard index(of: id) != nil else { return }
-        select(id)
-        start()
+    func switchAndStart(_ id: UUID, source: String = "unspecified") {
+        guard let index = index(of: id) else { return }
+        Self.log.notice("switchAndStart [\(source, privacy: .public)] → \(self.projects[index].name, privacy: .private)")
+        select(id, source: "switchAndStart←" + source)
+        start(source: "switchAndStart←" + source)
     }
 
     /// 0-based; out of range = no-op.
-    func switchAndStart(index: Int) {
+    func switchAndStart(index: Int, source: String = "unspecified") {
         guard projects.indices.contains(index) else { return }
-        switchAndStart(projects[index].id)
+        switchAndStart(projects[index].id, source: "index \(index)←" + source)
     }
 
     // MARK: - Editing
 
     /// Trimmed; empty → nil. Appended at the end; does NOT change the active project.
-    @discardableResult func addProject(named name: String) -> Project? {
+    @discardableResult func addProject(named name: String, source: String = "unspecified") -> Project? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         let project = Project(name: trimmed, createdAt: now())
         projects.append(project)
+        Self.log.notice("add [\(source, privacy: .public)] project=\(trimmed, privacy: .private)")
         save()
         return project
     }
 
     /// Trimmed; empty → ignored.
-    func rename(_ id: UUID, to name: String) {
+    func rename(_ id: UUID, to name: String, source: String = "unspecified") {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let index = index(of: id), projects[index].name != trimmed else { return }
+        Self.log.notice("rename [\(source, privacy: .public)] \(self.projects[index].name, privacy: .private) → \(trimmed, privacy: .private)")
         projects[index].name = trimmed
         save()
     }
@@ -195,8 +211,9 @@ import Combine
     /// No-op when `!canDelete`. Deleting the active project stops the timer
     /// (its live segment is discarded along with the project) and activates
     /// the project above it, or the next one if it was first.
-    func delete(_ id: UUID) {
+    func delete(_ id: UUID, source: String = "unspecified") {
         guard canDelete, let index = index(of: id) else { return }
+        Self.log.notice("delete [\(source, privacy: .public)] project=\(self.projects[index].name, privacy: .private) wasActive=\(id == self.activeProjectID, privacy: .public)")
         if id == activeProjectID {
             if isRunning { endRunningState() }
             let neighbor = index > 0 ? projects[index - 1] : projects[index + 1]
