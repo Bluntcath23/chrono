@@ -7,3 +7,6 @@ dist/
 .DerivedData/
 *.xcuserstate
 xcuserdata/
+# SwiftPM (Tests/ChronoCore)
+.build/
+.swiftpm/
