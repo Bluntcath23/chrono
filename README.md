@@ -2,7 +2,7 @@
 
 Chrono is your minimalist and lightweight macOS menu bar timer built for tracking time and staying focused. It’s designed to stay out of your way while you work — with a clean interface, quick access via hotkeys, and a subtle always-on-top presence that makes time tracking feel effortless.
 
-**Current version:** 2.0.0
+**Current version:** 2.0.1
 
 ## Preview
 
@@ -110,6 +110,29 @@ Watch what happens, with the reason for every start/stop/switch:
 /usr/bin/log stream --level info --predicate 'subsystem == "com.inozemtsev.Chrono"'
 ```
 
+Collect the last two days of logs after something went wrong (each launch logs the version, bundle path, whether it is sandboxed, which `projects.json` it loaded and every project's time; changes log their source and the seconds they discarded; project names stay private):
+
+```bash
+/usr/bin/log show --info --predicate 'subsystem == "com.inozemtsev.Chrono"' --last 2d > ~/Desktop/chrono-log.txt
+```
+
+Where the data lives:
+
+| Build | `projects.json` |
+|-------|-----------------|
+| Signed (Xcode, App Store) — sandboxed | `~/Library/Containers/com.inozemtsev.Chrono/Data/Library/Application Support/Chrono/` |
+| Unsigned (`CODE_SIGNING_ALLOWED=NO`, current DMG) — not sandboxed | `~/Library/Application Support/Chrono/` |
+
+A file that can't be loaded is never overwritten: it is first copied to `projects.json.<date-time>.bak` next to it (rename it back to `projects.json` with Chrono quit to restore it). If even the copy fails, Chrono doesn't save for that session. Only one copy of Chrono runs at a time; a second one shows an alert and quits.
+
+### Unit tests
+
+Pure logic (persistence and migration, restart recovery, time math, idle auto-pause, status item toggle) is tested by a small Swift package that compiles the app's real source files through symlinks:
+
+```bash
+swift test --package-path Tests/ChronoCore
+```
+
 ---
 
 ## Distribution
@@ -132,7 +155,7 @@ The DMG pipeline builds icons, compiles a Release `.app`, stages a styled disk i
 bash scripts/build-dmg.sh
 ```
 
-**Output:** `dist/Chrono-2.0.0.dmg`
+**Output:** `dist/Chrono-2.0.1.dmg`
 
 The script runs six steps: preflight → `.icns` → Release `.app` → DMG staging → Finder cosmetics → compressed read-only DMG.
 
@@ -157,6 +180,18 @@ The **build number** (`CURRENT_PROJECT_VERSION` in Xcode, `BUILD_NUMBER` in `bui
 ---
 
 ## Changelog
+
+### 2.0.1 — 2026-11-02
+
+**Fixes**
+
+- Clicking the menu bar timer while the panel is open now closes it. The panel was being hidden early in the click and then reopened by the button's action.
+- Tracked time is safer: a `projects.json` that can't be read or decoded is backed up to `projects.json.<date-time>.bak` before anything is written, and is never overwritten if the backup fails. Previously an unreadable file, or one with an empty project list, was silently replaced by a fresh "My Project".
+- More forgiving decoding: missing fields fall back to defaults (blank names become "Untitled Project", invalid times 0), and unknown keys are ignored. Files still contain every key 2.0.0 needs.
+- Only one copy of Chrono runs at a time. Two copies (for example an installed build plus an Xcode run) both rewrote `projects.json` and could overwrite each other's time.
+- A running timer loses at most 10 s after a crash or force quit (was 30 s), and `SIGTERM` (`kill`, `pkill`) now quits cleanly and saves.
+- Diagnostics: launch, load and every change are logged with project ids and seconds (see Testing → logs).
+- Unit tests for the pure logic: `swift test --package-path Tests/ChronoCore`.
 
 ### 2.0.0 — 2026-10-16
 
@@ -213,6 +248,7 @@ The **build number** (`CURRENT_PROJECT_VERSION` in Xcode, `BUILD_NUMBER` in `bui
 | `scripts/build-dmg.sh` | Direct-distribution DMG pipeline |
 | `scripts/build-icns.sh` | Icon compilation from `Chrono/assets/icons/` |
 | `docs/` | App Store checklist, metadata, privacy policy, 2.0 plan |
+| `Tests/ChronoCore/` | Swift package with unit tests; its sources are symlinks to the app files |
 | `Chrono.xcodeproj/` | Xcode project |
 
 `TimerViewModel.swift` was removed in 2.0 (replaced by `ProjectStore`).

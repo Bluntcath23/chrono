@@ -93,6 +93,11 @@ final class ChronoPanel: NSPanel {
     private var panel: ChronoPanel?
     private var reportedContentHeight: CGFloat?
     private var globalMouseMonitor: Any?
+    /// Sees mouse-downs on our own status item (local monitors only get events
+    /// for this app's windows) so a click knows whether the panel was open
+    /// when it began.
+    private var statusItemMouseMonitor: Any?
+    private var statusClicks = StatusItemClickTracker()
     private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
     private var cancellables = Set<AnyCancellable>()
     private var lastAccessibilityLabel = ""
@@ -134,6 +139,10 @@ final class ChronoPanel: NSPanel {
     /// nonisolated `deinit` touching main-actor state.
     func shutdown() {
         removeGlobalMouseMonitor()
+        if let monitor = statusItemMouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            statusItemMouseMonitor = nil
+        }
         for observer in observers {
             observer.center.removeObserver(observer.token)
         }
@@ -165,6 +174,19 @@ final class ChronoPanel: NSPanel {
             host.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             host.centerYAnchor.constraint(equalTo: button.centerYAnchor),
         ])
+
+        statusItemMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            // Local monitors run on the main thread.
+            nonisolated(unsafe) let mouseEvent = event
+            MainActor.assumeIsolated {
+                guard let self, let window = self.statusItem?.button?.window,
+                      mouseEvent.window === window else { return }
+                let visible = self.isPanelVisible
+                self.statusClicks.mouseDown(at: mouseEvent.timestamp, panelVisible: visible)
+                Self.log.debug("status item mouse-down, panel visible=\(visible, privacy: .public)")
+            }
+            return event
+        }
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
@@ -174,9 +196,24 @@ final class ChronoPanel: NSPanel {
         if isSecondaryClick {
             hidePanel(reason: "status item right-click")
             showStatusMenu()
-        } else {
-            togglePanel()
+            return
         }
+        let mouseUp = event?.timestamp ?? ProcessInfo.processInfo.systemUptime
+        if statusClicks.clickClosesPanel(mouseUpAt: mouseUp, panelVisible: isPanelVisible) {
+            // Already hidden earlier in this click (outside-click monitor or
+            // resign active)? Then this is a no-op and the panel stays closed.
+            Self.log.notice("status item click: close (was open when the click began, visible now=\(self.isPanelVisible, privacy: .public))")
+            hidePanel(reason: "status item click", restoreFocus: true)
+        } else {
+            Self.log.notice("status item click: open")
+            showPanel()
+        }
+    }
+
+    /// The status item button's frame in screen coordinates, if on screen.
+    private var statusButtonScreenRect: NSRect? {
+        guard let button = statusItem?.button, let window = button.window else { return nil }
+        return window.convertToScreen(button.convert(button.bounds, to: nil))
     }
 
     private func showStatusMenu() {
@@ -269,14 +306,6 @@ final class ChronoPanel: NSPanel {
 
     private var isPanelVisible: Bool { panel?.isVisible == true }
 
-    private func togglePanel() {
-        if isPanelVisible {
-            hidePanel(reason: "status item click", restoreFocus: true)
-        } else {
-            showPanel()
-        }
-    }
-
     private func showPanel() {
         guard let panel, !panel.isVisible,
               let button = statusItem?.button,
@@ -324,6 +353,11 @@ final class ChronoPanel: NSPanel {
     private func hidePanel(reason: String, restoreFocus: Bool = false) {
         guard let panel, panel.isVisible else { return }
         Self.log.notice("hide panel: \(reason, privacy: .public)")
+        if reason != "status item click" {
+            // A status item click that began before this hide must not reopen
+            // the panel on its mouse-up (see `StatusItemClickTracker`).
+            statusClicks.panelHiddenExternally(at: ProcessInfo.processInfo.systemUptime)
+        }
         panel.orderOut(nil)
         removeGlobalMouseMonitor()
         pillState.isPanelOpen = false
@@ -388,12 +422,23 @@ final class ChronoPanel: NSPanel {
 
     private func installGlobalMouseMonitor() {
         guard globalMouseMonitor == nil else { return }
-        // Global monitors only see events delivered to OTHER apps, so clicks
-        // inside the panel, its context menus and our status item never land here.
+        // Global monitors see events delivered to OTHER apps, so clicks inside
+        // the panel and its context menus never land here. A click on our own
+        // status item can still show up here when the menu bar routes it through
+        // another process; the status item action toggles the panel itself, so
+        // ignore it here (closing now made the action reopen the panel).
         globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.hidePanel(reason: "click outside (global monitor)") }
+            let location = NSEvent.mouseLocation
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if let rect = self.statusButtonScreenRect, rect.insetBy(dx: -2, dy: -2).contains(location) {
+                    Self.log.debug("global monitor: click on the status item, left to its action")
+                    return
+                }
+                self.hidePanel(reason: "click outside (global monitor)")
+            }
         }
     }
 
@@ -465,7 +510,7 @@ final class ChronoPanel: NSPanel {
             manager.hidePanel(reason: "user session switched")
         }
         observe(workspace, NSWorkspace.willPowerOffNotification) { manager in
-            manager.store.flush()
+            manager.store.flush(source: "power off")
         }
     }
 
