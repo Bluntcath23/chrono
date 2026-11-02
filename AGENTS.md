@@ -8,7 +8,7 @@ Guidelines for maintaining and extending Chrono. Read this before changing windo
 
 Chrono is a minimalist macOS menu bar time tracker with multiple projects. It shows a fluid status bar pill and opens a custom floating panel instead of a native `NSPopover`. This gives it macOS 26 prominent floating element styling: 20pt corners, liquid glass, and no system chrome bleed. It is distributed on the Mac App Store, with a DMG for direct builds.
 
-**Version:** 2.0.0 (build 3) · **Bundle:** `com.inozemtsev.Chrono` · **Target:** macOS 14+ · 2.0 spec: `docs/PLAN-2.0.md`
+**Version:** 2.0.1 (build 4) · **Bundle:** `com.inozemtsev.Chrono` · **Target:** macOS 14+ · 2.0 spec: `docs/PLAN-2.0.md`
 
 ### Core modules
 
@@ -51,6 +51,7 @@ Chrono is a minimalist macOS menu bar time tracker with multiple projects. It sh
 - **The window does not resize during transitions.** While open, the panel window is a fixed, tall, fully transparent canvas (`MenuBarManager.Layout.windowHeight`, clamped to the screen) with its **top edge pinned** under the status item. Resizing the window in the same frame as a content change made the window server present the new content and the new frame in different frames, so the whole panel jumped up (rounded top corners clipped) and slid back.
 - **Smooth bottom edge:** SwiftUI animates only the visible chrome height (`chromeHeight` in `TimerPopoverView.handleContentSize`, 0.25 s easeInOut). In-screen content changes animate with the same curve (`.animation(_:value: mode)` on `mainScreen`), so rows below a confirmation card or inline field follow the edge. Never run `NSAnimationContext` frame animations.
 - `onSizeChange` still reports the content size; `MenuBarManager.handleSizeChange` only grows the window (top pinned, instant) if content ever exceeds it.
+- **The status item is a toggle.** A left click closes the panel if it was open when the click began, even when something else (outside-click monitor, resign active) hid it before the button's mouse-up action; `StatusItemClickTracker` (in `TimerStatusBarView.swift`) decides, and the global outside-click monitor ignores clicks on the status item. Pass a reason other than `"status item click"` to `hidePanel` from every other hide path.
 - Clicks: `ignoresMouseEvents` stays at its default, so the transparent area below the panel passes clicks to the app behind (the outside-click monitor then closes the panel). Never assign `ignoresMouseEvents` (even `false` disables per-pixel click-through). The panel shape has a ~1 % fill as hit-test insurance (keep ≥ ~0.004); `ChronoPanel.sendEvent` also closes the panel if a click ever lands on the transparent canvas.
 - While the chrome animates, `MenuBarManager.trackShadow(for:)` refreshes the window shadow each frame (`onResizeAnimation`).
 - **Menu actions that change the panel height must run after the menu closes** (`afterMenuCloses` in `ProjectRowView.swift`). Menu actions fire inside AppKit's menu-tracking run loop; resizing the panel there makes it jump or render invisibly.
@@ -103,4 +104,7 @@ Chrono is a minimalist macOS menu bar time tracker with multiple projects. It sh
 - Follow semver: **MAJOR** for a redesign or breaking data change, **MINOR** for new features, **PATCH** for bug fixes (for example 2.0.0 → 2.0.1).
 - Bump these together, every time: Xcode `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION`, `scripts/build-dmg.sh` (`VERSION`, `BUILD_NUMBER`, header comment), and the `README.md` version line + changelog.
 - **The build number must increase on every App Store Connect upload**, including re-uploads of the same version after a rejection.
+- **Never overwrite a `projects.json` that failed to load.** `ProjectStore` backs it up to `projects.json.<date-time>.bak` first and disables saving for the session if the backup fails. Decoding (`ProjectPersistence.Snapshot`, `Project.init(from:)`) is lenient; keep writing every key 2.0.0 required so downgrades still read the file.
+- **One instance only.** `AppDelegate` quits (with an alert) if another process with the bundle id is running; two copies overwrite each other's `projects.json`.
+- Pure logic has unit tests in `Tests/ChronoCore` (`swift test --package-path Tests/ChronoCore`). A new file there is a symlink to the app file; app files must not depend on AppKit views to stay testable.
 - If the `projects.json` schema changes, keep decoding backward-compatible (optional fields or a migration). Users' tracked time must never be lost by an update.

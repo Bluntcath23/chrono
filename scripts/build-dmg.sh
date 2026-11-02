@@ -10,15 +10,15 @@
 #   bash scripts/build-dmg.sh
 #
 # Output:
-#   dist/Chrono-2.0.0.dmg  (Chrono 2.0.0, build 3 — direct distribution, not App Store)
+#   dist/Chrono-2.0.1.dmg  (Chrono 2.0.1, build 4 — direct distribution, not App Store)
 # =============================================================================
 
 set -euo pipefail
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 APP_NAME="Chrono"
-VERSION="2.0.0"
-BUILD_NUMBER="3"
+VERSION="2.0.1"
+BUILD_NUMBER="4"
 DMG_NAME="${APP_NAME}-${VERSION}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

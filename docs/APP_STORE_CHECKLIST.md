@@ -126,9 +126,9 @@ Limits are from [App information](https://developer.apple.com/help/app-store-con
 
 ## G. Build and upload (about 30 min, plus processing)
 
-- [ ] Version: `MARKETING_VERSION = 2.0.0`, `CURRENT_PROJECT_VERSION = 3` in Xcode, and `VERSION`/`BUILD_NUMBER` in `scripts/build-dmg.sh`. Bump all of them together.
-  - [x] `scripts/build-dmg.sh` updated to 2.0.0 / 3.
-  - [x] Xcode project: 2.0.0 / 3.
+- [ ] Version: `MARKETING_VERSION = 2.0.1`, `CURRENT_PROJECT_VERSION = 4` in Xcode, and `VERSION`/`BUILD_NUMBER` in `scripts/build-dmg.sh`. Bump all of them together.
+  - [x] `scripts/build-dmg.sh` updated to 2.0.1 / 4.
+  - [x] Xcode project: 2.0.1 / 4.
 - [ ] Build with the current **Xcode 26** release. Apple raises the minimum SDK for uploads periodically ([upcoming requirements](https://developer.apple.com/news/upcoming-requirements/)).
 - [ ] Clean Release build runs with no warnings that matter. Smoke-test the archived app (phase J).
 - [ ] **Option 1, Xcode UI:** scheme Chrono, destination *Any Mac* → **Product → Archive** → Organizer opens → **Distribute App → App Store Connect → Upload** → keep the defaults (automatic signing, upload symbols) → Upload.
@@ -153,7 +153,7 @@ Limits are from [App information](https://developer.apple.com/help/app-store-con
 
 ## I. Submit for review (about 15 min, then usually 1–3 days)
 
-- [ ] On the macOS version page (2.0.0), under **Build**, select the processed build.
+- [ ] On the macOS version page (2.0.1), under **Build**, select the processed build.
 - [ ] **App Review Information**:
   - [ ] Sign-in required: **No**
   - [ ] Contact: name, phone, email
@@ -190,7 +190,7 @@ Limits are from [App information](https://developer.apple.com/help/app-store-con
 - [ ] Search the store for the app name, install it from the store on a clean account, and check it.
 - [ ] Update `README.md` with the App Store link.
 - [ ] **Ratings and reviews**: App Store Connect → Ratings and Reviews. You can reply publicly to each review once, and edit your reply. Be short and polite, and point to the fix version.
-- [ ] Tag the release in git: `git tag v2.0.0 && git push --tags`.
+- [ ] Tag the release in git: `git tag v2.0.1 && git push --tags`.
 - [ ] **Shipping 2.0.1** (bug fix):
   1. Bump `MARKETING_VERSION` to 2.0.1 **and** `CURRENT_PROJECT_VERSION` to 4 (or higher), plus `scripts/build-dmg.sh`, plus the README changelog.
   2. Archive and upload (phase G).
